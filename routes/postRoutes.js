@@ -3,8 +3,10 @@ const express = require('express');
 const router = express.Router();
 const upload = require('../multer');
 const cloudinary = require('../cloudnary');
+const checkAuth = require('../middleware/checkAuth');
 
-router.post("", upload.single('image'), async (req, res, next) => {
+
+router.post("",checkAuth, upload.single('image'), async (req, res, next) => {
     try {
         // Check if req.file is available
         if (!req.file) {
@@ -16,12 +18,14 @@ router.post("", upload.single('image'), async (req, res, next) => {
 
         // Process other form data (title, content, etc.)
         const { title, content } = req.body;
+        const author = req.user.id;
 
         // Create a new post using the PostModel
         const newPost = new Post({
             title,
             content,
-            image: result.secure_url // Store the Cloudinary URL
+            image: result.secure_url, // Store the Cloudinary URL
+            author : author
         });
 
         // Save the new post to the database
@@ -43,11 +47,12 @@ router.post("", upload.single('image'), async (req, res, next) => {
   
 
 // READ OPERATION
-router.get("/myposts", async (req, res, next) => {
+router.get("/myposts",checkAuth, async (req, res, next) => {
     try {
       // Fetch blogs created by the user
     //   const userId = req.user.id; // Assuming you have user authentication in place
-      const userBlogs = await Post.find();
+      const authorId = req.user.id;
+      const userBlogs = await Post.find({author : authorId});
   
       res.status(200).json({
         message: "User's blogs fetched successfully",
@@ -59,7 +64,7 @@ router.get("/myposts", async (req, res, next) => {
     }
   });
 //UPDATE OPERATION
-router.put("/:id", async (req, res) => {
+router.put("/:id",checkAuth, async (req, res) => {
     try {
       const blogId = req.params.id;
       const updatedData = {
@@ -82,7 +87,7 @@ router.put("/:id", async (req, res) => {
 
 
 //DELETE OPERATION
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id",checkAuth, async (req, res, next) => {
     try {
       const blogId = req.params.id;
       const deletedBlog = await Post.findByIdAndDelete(blogId);
