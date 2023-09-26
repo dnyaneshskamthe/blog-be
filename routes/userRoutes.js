@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const User = require('../models/userModel'); // Import the User model
+const User = require('../models/userModel'); 
+const Post = require('../models/postModel')
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const checkAuth = require('../middleware/checkAuth')
@@ -32,7 +33,7 @@ router.post('/signIn', async (req, res) => {
         const payload = {
             id: user._id,
             email: user.email,
-            name: user.name,
+            name: user.username,
         };
        // Sign the JWT with the payload and a secret key
        const secretKey = process.env.JWT_SECRET_KEY; // Replace this with your own secret key
@@ -48,24 +49,38 @@ router.post('/signIn', async (req, res) => {
 });
 
 // Get user profile
-router.get('/profile',checkAuth, async (req, res) => {
-    try {
-      const userId = req.user.id; // Assuming you have a middleware that extracts user ID from authentication
-      const user = await User.findById(userId);
-      if (user) {
-        const userProfile = {
-          name: user.username,
-          email: user.email
-          // Add more user profile data if needed
-        };
-        res.status(200).json({ user: userProfile });
-      } else {
-        res.status(404).json({ message: 'User not found' });
+// Get user profile with profile picture
+router.get('/profile', checkAuth, async (req, res) => {
+  try {
+    const userId = req.user.id; // Assuming you have a middleware that extracts user ID from authentication
+    const user = await User.findById(userId);
+
+    if (user) {
+      const userProfile = {
+        name: user.username,
+        email: user.email,
+        // Initialize the profilePicture as null
+        profilePicture: null,
+        // Add more user profile data if needed
+      };
+
+      // Find a post authored by the user
+      const userPost = await Post.findOne({ author: userId });
+
+      // If a user post is found, extract the profile picture URL
+      if (userPost) {
+        userProfile.profilePicture = userPost.image;
       }
-    } catch (error) {
-        console.error('Error fetching user profile:', error);
-        res.status(500).json({ message: 'An error occurred' });
-      }
-    });
+
+      res.status(200).json({ user: userProfile });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'An error occurred' });
+  }
+});
+
 
 module.exports = router;
