@@ -63,6 +63,22 @@ router.get("/myposts",checkAuth, async (req, res, next) => {
       res.status(500).json({ message: 'An error occurred' });
     }
   });
+
+// READ ALL OPERATION
+router.get("/allBlogs",checkAuth, async (req, res, next) => {
+  try {
+    // Fetch all blogs
+    const allblogs = await Post.find().populate('author');
+
+    res.status(200).json({
+      message: "All blogs fetched successfully",
+      blogs: allblogs
+    });
+  } catch (error) {
+    console.error('Error fetching all blogs:', error);
+    res.status(500).json({ message: 'An error occurred' });
+  }
+});
 //UPDATE OPERATION
 router.put("/:id",checkAuth, async (req, res) => {
     try {
